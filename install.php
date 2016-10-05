@@ -16,23 +16,35 @@ $migrator = new Rails\ActiveRecord\Migration\Migrator();
 /**
  * Show splash
  */
-$txColor = Color::LIGHT_WHITE;
-$bgColor = Color::GREEN;
-$c->put();
-$c->put("====================", $txColor, $bgColor);
-$c->put(" MyImouto installer ", $txColor, $bgColor);
-$c->put("====================", $txColor, $bgColor);
-$c->put();
+if (!isset($argv[2]))
+{
+    $txColor = Color::LIGHT_WHITE;
+    $bgColor = Color::GREEN;
+    $c->put();
+    $c->put("====================", $txColor, $bgColor);
+    $c->put(" MyImouto installer ", $txColor, $bgColor);
+    $c->put("====================", $txColor, $bgColor);
+    $c->put();
+}
 
 
 /**
  * Get data for admin account
  */
-$c->put("Admin account", null, Color::BLUE);
-$c->put("Please enter a name and password for the admin account.");
-$c->write("Note: ", Color::RED);
-$c->put("the password will be shown.");
-list($adminName, $adminPass) = getAdminData($c);
+if (!isset($argv[2]))
+{
+    $c->put("Admin account", null, Color::BLUE);
+    $c->put("Please enter a name and password for the admin account.");
+    $c->write("Note: ", Color::RED);
+    $c->put("the password will be shown.");
+    list($adminName, $adminPass) = getAdminData($c);
+}
+else
+{
+    $adminName = argv[1];
+    $adminPass = argv[2];
+}
+
 
 
 /**
@@ -57,10 +69,22 @@ $c->put('done');
 
 # Create user in database
 $c->write("Creating admin account...");
-Rails\ActiveRecord\ActiveRecord::connection()->executeSql(
-    'INSERT INTO users (created_at, name, password_hash, level, show_advanced_editing) VALUES (?, ?, ?, ?, ?)',
-    date('Y-m-d H:i:s'), $adminName, User::sha1($adminPass), 50, 1
-);
+if (!isset($argv[2]))
+{
+    $c->put("false");
+    Rails\ActiveRecord\ActiveRecord::connection()->executeSql(
+        'INSERT INTO users (created_at, name, password_hash, level, show_advanced_editing) VALUES (?, ?, ?, ?, ?)',
+        date('Y-m-d H:i:s'), $adminName, User::sha1($adminPass), 50, 1
+    );
+}
+else
+{
+    $c->put("true");
+    Rails\ActiveRecord\ActiveRecord::connection()->executeSql(
+        'INSERT INTO users (created_at, name, password_hash, level, show_advanced_editing) VALUES (?, ?, ?, ?, ?)',
+        date('Y-m-d H:i:s'), $argv[1], User::sha1($argv[2]), 50, 1
+    );
+}
 Rails\ActiveRecord\ActiveRecord::connection()->executeSql(
     'INSERT INTO user_blacklisted_tags VALUES (?, ?)',
     1, implode("\r\n", CONFIG()->default_blacklists)
@@ -96,9 +120,12 @@ foreach ($dirs as $dir) {
 /**
  * Finish
  */
-$c->put();
-$c->put("Installation finished.", Color::GREEN);
-$c->put("You may delete this install.php file.");
+if (!isset($argv[2]))
+{
+    $c->put();
+    $c->put("Installation finished.", Color::GREEN);
+}
+
 $c->put();
 
 function nullErrorHandler() {}

@@ -28,8 +28,13 @@
         <param name="movie" value="<?= $this->post->file_url() ?>">
         <embed src="<?= $this->post->file_url() ?>" width="<?= $this->post->width ?>" height="<?= $this->post->height ?>" allowScriptAccess="never"></embed>
       </object>
-
-      <p><?= $this->linkTo($this->t('post_flash_dl'), $this->post->file_url()) ?></p>
+  <?php elseif ($this->post->video()) : ?>
+    <div>
+        <video controls="true" autoplay="true" loop="true" >
+          <source src="<?= $this->post->file_url() ?>" type="video/<?= $this->post->file_ext ?>">
+          Your browser does not support webm/mp4 video.
+        </video>
+    </div>
     <?php else: ?>
       <h2><a href="<?= $this->post->file_url() ?>"><?= $this->t('post_download') ?></a></h2>
       <p><?= $this->t('post_download_text') ?></p>

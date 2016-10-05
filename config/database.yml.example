@@ -3,8 +3,8 @@
 login: &login
   adapter: mysql
   host: 127.0.0.1
-  username: moe
-  password: imouto
+  username: root
+  password: __dbpassword__
 
 development:
   <<: *login

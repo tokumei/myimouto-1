@@ -1,0 +1,9 @@
+#!/bin/bash
+cd ~/myimouto
+git pull
+composer install
+cd /var/www/myimouto
+git pull
+composer install
+cp ~/myimouto/script/myimouto/* ~/bin/myimouto
+chmod 0755 ~/bin/myimouto/*

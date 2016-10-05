@@ -12,6 +12,8 @@ trait PostFileMethods
         'image/jpg'  => 'jpg',
         'image/png'  => 'png',
         'image/gif'  => 'gif',
+        'video/webm' => 'webm',
+        'video/mp4'  => 'mp4',
         'application/x-shockwave-flash' => 'swf'
     ];
     
@@ -107,7 +109,44 @@ trait PostFileMethods
             return false;
         }
         
-        $this->file_ext = self::$MIME_TYPES[$this->mime_type];
+        $this->file_ext = self::$MIME_TYPES[$this->mime_type]; 
+
+        if (!CONFIG()->video_enable && in_array($this->file_ext, array('mp4', 'webm'))){
+            $this->errors()->add('video', 'support is disabled: ' . $this->mime_type);
+            return false;
+        }
+  
+    }
+
+    protected function validate_video_stream()
+    {
+        if (!$this->video()) {
+            return true;
+        }
+
+        $video = new FFmpegMovie($this->tempfile_path());
+        if (strpos($video->getVideoCodec(), 'h264') === false && !in_array($video->getVideoCodec(), array('vp8', 'vp9'))){
+            $this->errors()->add('video', 'stream is invalid: ' . $video->getVideoCodec() . '. Only h264 and vp8/vp9 are supported.');
+            return false;
+        }
+
+        if (!CONFIG()->audio_enable_for_video && $video->hasAudio()){
+            $this->errors()->add('video', 'has an audio track. Please remove audio tracks before uploading.');
+            return false;
+        }
+
+        $this->width = $video->getFrameWidth();
+        $this->height = $video->getFrameHeight();
+        if ($this->width > CONFIG()->video_max_width || $this->height > CONFIG()->video_max_height){
+            $this->errors()->add('video', 'solution is too high. Max solution: ' . CONFIG()->video_max_width . 'x' . CONFIG()->video_max_height);
+            return false;
+        }
+
+        if($video->getBitRate() > CONFIG()->video_max_bitrate){
+            $this->errors()->add('video', 'quality is too high, bitrate: ' . $video->getBitRate() . '. Max bitrate: ' . CONFIG()->video_max_bitrate);
+            return false;
+        }
+
     }
     
     public function pretty_file_name($options = array())
@@ -331,9 +370,13 @@ trait PostFileMethods
         
         $this->tempfile_name = pathinfo($this->tempfile_name, PATHINFO_FILENAME);
         
-        list ($x, $y, $type) = getimagesize($this->tempfile_path());
+        //list ($x, $y, $type) = getimagesize($this->tempfile_path());
+        list ($x, $y) = getimagesize($this->tempfile_path());
         
-        $this->mime_type = image_type_to_mime_type($type);
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $this->mime_type = finfo_file($finfo, $this->tempfile_path());
+        //$this->mime_type = image_type_to_mime_type($type);
+        finfo_close($finfo);
     }
     
     # Assigns a CGI file to the post. This writes the file to disk and generates a unique file name.
@@ -419,6 +462,11 @@ trait PostFileMethods
         return $this->file_ext == 'gif';
     }
 
+    public function video()
+    {
+        return in_array($this->file_ext, array('mp4', 'webm'));
+    }
+
     // public function find_ext(file_path)
     // {
         // ext = File.extname(file_path)
@@ -455,7 +503,7 @@ trait PostFileMethods
 
     public function raw_preview_dimensions()
     {
-        if ($this->image()) {
+        if ($this->image() || $this->video() || $this->flash()) {
             $dim = Moebooru\Resizer::reduce_to(array('width' => $this->width, 'height' => $this->height), array('width' => 300, 'height' => 300));
             $dim = array($dim['width'], $dim['height']);
         } else
@@ -465,7 +513,7 @@ trait PostFileMethods
 
     public function preview_dimensions()
     {
-        if ($this->image()) {
+        if ($this->image() || $this->video() || $this->flash()) {
             $dim = Moebooru\Resizer::reduce_to(array('width' => $this->width, 'height' => $this->height), array('width' => 150, 'height' => 150));
             $dim = array($dim['width'], $dim['height']);
         } else
@@ -531,7 +579,7 @@ trait PostFileMethods
     
     protected function generate_preview($force_regen = false)
     {
-        if (!$this->image() || (!$this->width && !$this->height))
+        if ((!$this->image() && !$this->video() && !$this->flash()) || (!$this->width && !$this->height))
             return true;
         
         # If we already have a preview image, don't regenerate it.
@@ -541,7 +589,6 @@ trait PostFileMethods
         
         $size = Moebooru\Resizer::reduce_to(array('width' => $this->width, 'height' => $this->height), array('width' => 300, 'height' => 300));
 
-        # Generate the preview from the new sample if we have one to save CPU, otherwise from the image.
         if (is_file($this->tempfile_sample_path()))
             list($path, $ext) = array($this->tempfile_sample_path(), "jpg");
         elseif (is_file($this->sample_path()))
@@ -552,15 +599,39 @@ trait PostFileMethods
             list($path, $ext) = array($this->file_path(), $this->file_ext);
         else
             return false;
-        
-        try {
-            Moebooru\Resizer::resize($ext, $path, $this->tempfile_preview_path(), $size, 85);
-        } catch (Exception $e) {
-            $this->errors()->add("preview", "couldn't be generated (".$e->getMessage().")");
-            $this->delete_tempfile();
-            return false;
+
+        if ($this->video()){
+            try {
+                $video = new FFmpegMovie($this->tempfile_path());
+                $video->getFrameAtTime(0, $size['width'], $size['height'], '', $this->tempfile_preview_path());
+            } catch (Exception $e) {
+                $this->errors()->add("preview", "couldn't be generated (".$e->getMessage().")");
+                $this->delete_tempfile();
+                return false;
+            }
         }
-        
+
+        //fix this in the future
+        if ($this->flash()){
+            try {
+                exec('ffmpeg -i ' .$this->tempfile_path() . ' -vcodec mjpeg -vframes 1 -s ' . $size['width'] . 'x' . $size['height'] . ' -an ' . $this->tempfile_preview_path());
+            } catch (Exception $e) {
+                $this->errors()->add("preview", "couldn't be generated (".$e->getMessage().")");
+                $this->delete_tempfile();
+                return false;
+            }
+        }
+
+        if ($this->image()){
+            try {
+                Moebooru\Resizer::resize($ext, $path, $this->tempfile_preview_path(), $size, 85);
+            } catch (Exception $e) {
+                $this->errors()->add("preview", "couldn't be generated (".$e->getMessage().")");
+                $this->delete_tempfile();
+                return false;
+            }
+        }
+
         $this->actual_preview_width = $this->raw_preview_dimensions()[0];
         $this->actual_preview_height = $this->raw_preview_dimensions()[1];
         $this->preview_width = $this->preview_dimensions()[0];

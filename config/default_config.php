@@ -8,16 +8,16 @@ namespace MyImouto;
 abstract class DefaultConfig
 {
     # The name of this booru.
-    public $app_name    = 'my.imouto';
+    public $app_name    = 'MyImouto';
 
     # Host name. Must not include scheme (i.e. http(s)://) nor trailing slash.
-    public $server_host = '127.0.0.1:3000';
+    public $server_host = '127.0.0.1';
 
     # This is the same as $server_host but includes scheme.
-    public $url_base    = 'http://127.0.0.1:3000';
+    public $url_base    = 'http://127.0.0.1';
 
     # The version of this MyImouto
-    public $version = '1.0.8';
+    public $version = '2.0.0';
 
     # This is a salt used to make dictionary attacks on account passwords harder.
     public $user_password_salt = 'choujin-steiner';
@@ -25,9 +25,9 @@ abstract class DefaultConfig
     # Set to true to allow new account signups.
     public $enable_signups = true;
 
-    # Newly created users start at this level. Set this to 30 if you want everyone
-    # to start out as a privileged member.
-    public $starting_level = 30;
+    # Newly created users start at this level. Set this to 20 if you want everyone
+    # to start out as a member.
+    public $starting_level = 20;
 
     # What method to use to store images.
     # local_flat: Store every image in one directory.
@@ -69,7 +69,7 @@ abstract class DefaultConfig
     public $sample_filename_prefix = '';
 
     # Enables creating JPEGs for PNGs.
-    public $jpeg_enable = true;
+    public $jpeg_enable = false;
 
     # Scale JPEGs to fit in these dimensions.
     public $jpeg_width = 3500;
@@ -82,19 +82,30 @@ abstract class DefaultConfig
     public $jpeg_ratio = 1.25;
     public $jpeg_quality = array('min' => 94, 'max' => 97, 'filesize' => 4194304 /*1024*1024*4*/);
 
+    # Enables WEBMs and MP4s video support.
+    public $video_enable = true;
+
+    # No Audio allowed for WEBMs and MP4s. Users should remove audio tracks from video before uploading. 
+    public $audio_enable_for_video = true;
+
+    ## Video limitation.
+    public $video_max_width = '4096';
+    public $video_max_height = '2160';
+    public $video_max_bitrate = '360000000';    
+    
     # If enabled, URLs will be of the form:
     # http://host/image/00112233445566778899aabbccddeeff/12345 tag tag2 tag3.jpg
     #
     # This allows images to be saved with a useful filename, and hides the MD5 hierarchy (if
     # any).    This does not break old links; links to the old URLs are still valid.    This
     # requires URL rewriting (not redirection!) in your webserver.
-    public $use_pretty_image_urls = false;
+    public $use_pretty_image_urls = true;
 
     # If use_pretty_image_urls is true, sets a prefix to prepend to all filenames.    This
     # is only present in the generated URL, and is useful to allow your downloaded files
     # to be distinguished from other sites; for example, "moe 12345 tags.jpg" vs.
     # "kc 54321 tags.jpg".
-    public $download_filename_prefix = "myimouto";
+    public $download_filename_prefix = "MyImouto -";
 
     # Files over this size will always generate a sample, even if already within
     # the above dimensions.
@@ -193,12 +204,12 @@ abstract class DefaultConfig
     public $enable_artists = true;
 
     # Users cannot search for more than X regular tags at a time.
-    public $tag_query_limit = 6;
+    public $tag_query_limit = 20;
 
     # Set this to true to hand off time consuming tasks (downloading files, resizing images, any sort of heavy calculation) to a separate process.
     # @see $active_job_tasks
     # @see is_job_task_active()
-    public $enable_asynchronous_tasks = false;
+    public $enable_asynchronous_tasks = true;
 
     public $avatar_max_width = 125;
     public $avatar_max_height = 125;
@@ -247,7 +258,7 @@ abstract class DefaultConfig
     # The default name to use for anyone who isn't logged in.
     public $default_guest_name = "Anonymous";
 
-    public $admin_contact = 'admin@myimouto';
+    public $admin_contact = 'admin@myimouto.me';
 
     # Background color when resizing transparent PNG/GIF images.
     # Using RGB values.
@@ -282,7 +293,7 @@ abstract class DefaultConfig
     # This value will be passed to strtotime(). Check out http://php.net/manual/en/function.strtotime.php
     # for more info.
     # The leading minus sign (-) will be added automatically, therefore must be omitted.
-    public $post_index_tags_limit = '1 day';
+    public $post_index_tags_limit = '30 day';
 
     # Default rating for upload (e, q or s).
     public $default_rating_upload = 'q';
@@ -295,6 +306,9 @@ abstract class DefaultConfig
 
     # Automatically add "flash" tag to SWF files.
     public $add_flash_tag_to_swf = true;
+
+    # Automatically add "video" tag to VIDEO files.
+    public $add_video_tag_to_video = true;
 
     # Enables the E/R hotkeys to jump to the edit/reply forms respectevely in post#show.
     public $post_show_hotkeys = true;
@@ -327,7 +341,7 @@ abstract class DefaultConfig
 
     # Adds delete option to Post Mode menu in post#index, only available for admins.
     # Be careful with this.
-    public $delete_post_mode = false;
+    public $delete_post_mode = true;
 
     # When deleting a post, it will be deleted completely at once.
     # Be careful with this.
@@ -400,7 +414,7 @@ abstract class DefaultConfig
 
     # Enables tag autocomplete in the home page.
     # Requires $enable_tag_completion.
-    public $tag_completion_in_homepage = false;
+    public $tag_completion_in_homepage = true;
 
     # Configuration for External Data Search job task.
     # Only the needed values to be changed can be copied over the

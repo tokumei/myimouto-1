@@ -11,13 +11,13 @@ namespace MyImouto;
 class LocalConfig extends DefaultConfig
 {
     # The name of this booru.
-    public $app_name    = 'my.imouto';
+    public $app_name    = 'MyImouto';
     
     # Host name. Must not include scheme (http(s)://) nor trailing slash.
-    public $server_host = '127.0.0.1:3000';
+    public $server_host = '__hostname__';
     
     # This is the same as $server_host but includes scheme.
-    public $url_base    = 'http://127.0.0.1:3000';
+    public $url_base    = 'http://__hostname__';
     
-    public $admin_contact = 'admin@myimouto';
+    public $admin_contact = 'admin@__hostname__';
 }

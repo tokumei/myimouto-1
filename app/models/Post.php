@@ -249,7 +249,7 @@ class Post extends Rails\ActiveRecord\Base
             
             'before_validation_on_create' => [
                 'download_source', 'ensure_tempfile_exists', 'determine_content_type',
-                'validate_content_type', 'generate_hash', 'set_image_dimensions',
+                'validate_content_type', 'validate_video_stream', 'generate_hash', 'set_image_dimensions',
                 'set_image_status', 'check_pending_count', 'generate_sample',
                 'generate_jpeg', 'generate_preview', 'move_file'
             ],
@@ -296,6 +296,8 @@ class Post extends Rails\ActiveRecord\Base
             $this->new_tags[] = 'gif';
         elseif ($this->flash() && CONFIG()->add_flash_tag_to_swf)
             $this->new_tags[] = 'flash';
+        elseif ($this->video() && CONFIG()->add_video_tag_to_video)
+            $this->new_tags[] = 'video';
         
         if ($this->new_tags)
             $this->old_tags = 'tagme';

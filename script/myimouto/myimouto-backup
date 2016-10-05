@@ -1,0 +1,8 @@
+#!/bin/bash
+NOW=$(date +"%b-%d-%Y_%I%M%S")
+mkdir ~/backup
+cd /var/www
+read -r MYSQLPASS < ~/mysql.pass
+mysqldump -h 127.0.0.1 -u root -p$MYSQLPASS --add-drop-database --databases myimouto > /var/www/db.sql
+zip -r ~/backup/myimouto_$NOW.zip myimouto db.sql
+rm /var/www/db.sql

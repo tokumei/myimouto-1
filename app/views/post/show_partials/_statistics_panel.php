@@ -6,7 +6,7 @@
     <?php if (current_user()->is_admin() && $this->post->approver) : ?>
       <li><?= $this->t('.approver') ?>: <?= $this->post->approver->name ?></li>
     <?php endif ?>
-    <?php if ($this->post->image()) : ?>
+    <?php if ($this->post->image() or $this->post->video() or $this->post->flash()): ?>
       <li><?= $this->t('.size') ?>: <?= $this->post->width ?>x<?= $this->post->height ?></li>
     <?php endif ?>
     <?php if ($this->post->source) : ?>

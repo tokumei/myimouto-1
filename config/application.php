@@ -16,6 +16,8 @@ class Application extends \Rails\Application\Base
         require __DIR__ . '/config.php';
         require __DIR__ . '/../lib/functions.php';
         $this->booruConfig = new LocalConfig();
+        $this->booruConfig->server_host = $_SERVER['HTTP_HOST'];
+        $this->booruConfig->url_base = 'http://' . $_SERVER['HTTP_HOST'];
         
         $this->I18n()->loadLocale('my-imouto');
     }

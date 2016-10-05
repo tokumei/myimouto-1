@@ -5,6 +5,20 @@
     <!-- <?php //if (!$this->post->is_deleted() && $this->post->image() && $this->post->width && $this->post->width > 700) : ?>
       <li><?php //echo $this->linkToFunction($this->t('.resize'), "post->resize_image()") ?></li>
     <?php //endif ?> -->
+    <?php if ($this->post->video() && $this->post->can_be_seen_by(current_user())) : ?>
+      <?php $file_image = $this->post->get_file_image(); ?>
+        <li><?= $this->linkTo('Video'.' ('.$this->numberToHumanSize($file_image['size']).' '.strtoupper($file_image['ext']).')', $file_image['url'], array(
+                        'class' => 'original-file-unchanged',
+                        'id' => 'highres'));?>
+        </li>
+    <?php endif ?>
+    <?php if ($this->post->flash() && $this->post->can_be_seen_by(current_user())) : ?>
+      <?php $file_image = $this->post->get_file_image(); ?>
+        <li><?= $this->linkTo('Flash'.' ('.$this->numberToHumanSize($file_image['size']).' '.strtoupper($file_image['ext']).')', $file_image['url'], array(
+                        'class' => 'original-file-unchanged',
+                        'id' => 'highres'));?>
+        </li>
+    <?php endif ?>
     <?php if ($this->post->image() && $this->post->can_be_seen_by(current_user())) : ?>
       <?php $file_jpeg = $this->post->get_file_jpeg() ?>
       <?php if ($this->post->use_sample(current_user()) or current_user()->always_resize_images) : ?>

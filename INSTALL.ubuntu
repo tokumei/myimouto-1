@@ -1,0 +1,236 @@
+#!/bin/bash
+
+# Run: curl -s https://raw.githubusercontent.com/VeryCrushed/myimouto/master/INSTALL.ubuntu > install.sh ; chmod +x install.sh ; ./install.sh ; rm install.sh
+
+if [[ "$(whoami)" != "root" ]] ; then
+  echo "You must run this script as root"
+  exit 1
+fi
+
+# Hostname
+echo "* MYIMOUTO INSTALLATION SCRIPT"
+echo "*"
+echo "* This script will install all the necessary packages to run MyImouto on a   "
+echo "* Ubuntu server."
+echo
+echo -n "* Enter the hostname for this server (ex: myimouto.me): "
+read HOSTNAME
+
+if [[ -z "$HOSTNAME" ]] ; then
+  echo "* Must enter a hostname"
+  exit 1
+fi
+
+# myimouto account password
+echo -n "* Enter the MyImouto account password to be used for this server: "
+read MYIMOUTOPASSWORD
+
+if [[ -z "$MYIMOUTOPASSWORD" ]] ; then
+  echo "* Must enter a password"
+  exit 1
+fi
+
+# Website username
+echo -n "* Enter the MyImouto website admin username to be used for this server: "
+read WEBSITEUSERNAME
+
+if [[ -z "$WEBSITEUSERNAME" ]] ; then
+  echo "* Must enter a username"
+  exit 1
+fi
+
+# Website password
+echo -n "* Enter the MyImouto website admin password to be used for this server: "
+read WEBSITEPASSWORD
+
+if [[ -z "$WEBSITEPASSWORD" ]] ; then
+  echo "* Must enter a password"
+  exit 1
+fi
+
+# MySQL root password
+echo -n "* Enter the MySQL root password to be used for this server: "
+read DBPASSWORD
+
+if [[ -z "$DBPASSWORD" ]] ; then
+  echo "* Must enter a password"
+  exit 1
+fi
+
+# eXtplorer username
+echo -n "* Enter the eXtplorer admin username to be used for this server: "
+read EXTUSERNAME
+
+if [[ -z "$EXTUSERNAME" ]] ; then
+  echo "* Must enter a username"
+  exit 1
+fi
+
+# eXtrplorer password
+echo -n "* Enter the eXtplorer admin password to be used for this server: "
+read EXTPASSWORD
+
+if [[ -z "$EXTPASSWORD" ]] ; then
+  echo "* Must enter a password"
+  exit 1
+fi
+
+# Install scripts
+export GITHUB_INSTALL_SCRIPTS=https://raw.githubusercontent.com/VeryCrushed/myimouto/master/script/install
+
+# Create user account
+echo "* Creating myimouto user account..."
+useradd -r -m myimouto
+chsh -s /bin/bash myimouto
+usermod -G myimouto,sudo myimouto
+sudo -i -u myimouto touch ~myimouto/.bash_profile
+echo "myimouto:$MYIMOUTOPASSWORD" | chpasswd
+sudo -i -u myimouto bash -l -c 'mkdir ~/.ssh'
+sudo -i -u myimouto bash -l -c 'ssh-keygen -t rsa -N "" -f "/home/myimouto/.ssh/id_rsa"'
+
+# Install packages
+echo "* Installing packages..."
+add-apt-repository -y ppa:ondrej/php
+add-apt-repository -y ppa:git-core/ppa
+add-apt-repository -y ppa:mc3man/trusty-media
+apt-get update
+apt-get upgrade -y
+debconf-set-selections <<< "mysql-server mysql-server/root_password password $DBPASSWORD"
+debconf-set-selections <<< "mysql-server mysql-server/root_password_again password $DBPASSWORD"
+apt-get install -y php7.0-fpm php7.0-xml php7.0-gd php7.0-mbstring php-memcached nginx imagemagick php7.0-imagick mysql-server-5.6 php7.0-mysql ffmpeg git zip unzip vsftpd
+usermod -a -G www-data myimouto
+
+if [ $? -ne 0 ]; then
+  echo "* Error installing packages; aborting"
+  exit 1
+fi
+
+# Setup PHP
+echo "* Configuring php..."
+curl -L -s $GITHUB_INSTALL_SCRIPTS/php.ini -o /etc/php/7.0/fpm/php.ini
+curl -L -s $GITHUB_INSTALL_SCRIPTS/www.conf -o /etc/php/7.0/fpm/pool.d/www.conf
+
+# Setup MySQL
+echo "* Configuring mysql..."
+sudo -i -u myimouto mysql -u root -p$DBPASSWORD << EOF
+CREATE DATABASE myimouto COLLATE utf8_general_ci;
+EOF
+sudo -i -u myimouto bash -l -c "echo $DBPASSWORD > ~/mysql.pass"
+
+# Setup nginx
+echo "* Configuring nginx..."
+curl -L -s $GITHUB_INSTALL_SCRIPTS/nginx.conf -o /etc/nginx/nginx.conf
+curl -L -s $GITHUB_INSTALL_SCRIPTS/nginx.default.conf -o /etc/nginx/sites-available/default
+curl -L -s $GITHUB_INSTALL_SCRIPTS/nginx.extplorer.conf -o /etc/nginx/conf.d/extplorer.conf
+curl -L -s $GITHUB_INSTALL_SCRIPTS/nginx.phpmyadmin.conf -o /etc/nginx/conf.d/phpmyadmin.conf
+curl -L -s $GITHUB_INSTALL_SCRIPTS/nginx.myimouto.conf -o /etc/nginx/conf.d/myimouto.conf
+sed -i -e "s/__hostname__/$HOSTNAME/g" /etc/nginx/conf.d/extplorer.conf
+sed -i -e "s/__hostname__/$HOSTNAME/g" /etc/nginx/conf.d/phpmyadmin.conf
+sed -i -e "s/__hostname__/$HOSTNAME/g" /etc/nginx/conf.d/myimouto.conf
+mkdir /var/www
+chown -R myimouto:myimouto /var/www
+
+# Setup vsftpd
+echo "* Configuring vsftpd..."
+curl -L -s $GITHUB_INSTALL_SCRIPTS/vsftpd.conf -o /etc/vsftpd.conf
+
+# Restart Services
+echo "* Restarting services..."
+echo "* Stopping vsftpd"
+service vsftpd stop
+echo "* Stopping nginx"
+service nginx stop
+echo "* Stopping php"
+service php7.0-fpm stop
+echo "* Stopping mysql"
+service mysql stop
+echo "* Starting mysql"
+service mysql start
+echo "* Starting php"
+service php7.0-fpm start
+echo "* Starting nginx"
+service nginx start
+echo "* Starting vsftpd"
+service vsftpd start
+
+# Install Composer
+echo "* Installing Composer..."
+php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+php composer-setup.php
+php -r "unlink('composer-setup.php');"
+mv composer.phar /usr/local/bin/composer
+
+# Setup extplorer
+echo "* Setting up extplorer..."
+sudo -i -u myimouto bash -l -c 'mkdir /var/www/extplorer'
+sudo -i -u myimouto bash -l -c 'cd ~ ; wget https://github.com/VeryCrushed/myimouto/releases/download/v1.0.8/extplorer_2.1.9.zip'
+sudo -i -u myimouto bash -l -c 'cd ~ ; unzip extplorer_2.1.9.zip -d /var/www/extplorer/'
+sudo -i -u myimouto bash -l -c "curl -L -s $GITHUB_INSTALL_SCRIPTS/htusers.php -o /var/www/extplorer/config/.htusers.php"
+sudo -i -u myimouto bash -l -c "curl -L -s $GITHUB_INSTALL_SCRIPTS/passgen.php -o /var/www/extplorer/passgen.php"
+sudo -i -u myimouto bash -l -c "cd /var/www/extplorer ; php passgen.php $EXTUSERNAME $EXTPASSWORD"
+sudo -i -u myimouto bash -l -c 'rm /var/www/extplorer/passgen.php'
+sudo -i -u myimouto bash -l -c 'cd ~ ; rm extplorer_2.1.9.zip'
+
+# Setup phpmyadmin
+echo "* Setting up phpmyadmin..."
+sudo -i -u myimouto bash -l -c 'mkdir /var/www/phpmyadmin'
+sudo -i -u myimouto bash -l -c 'cd ~ ; wget https://github.com/VeryCrushed/myimouto/releases/download/v1.0.8/phpmyadmin_4.6.4.zip'
+sudo -i -u myimouto bash -l -c 'cd ~ ; unzip phpmyadmin_4.6.4.zip -d /var/www/phpmyadmin/'
+sudo -i -u myimouto bash -l -c "curl -L -s $GITHUB_INSTALL_SCRIPTS/config.inc.php -o /var/www/phpmyadmin/config.inc.php"
+sudo -i -u myimouto mysql -u root -p$DBPASSWORD < /var/www/phpmyadmin/sql/create_tables.sql
+sudo -i -u myimouto bash -l -c 'cd ~ ; rm phpmyadmin_4.6.4.zip'
+
+# Setup MyImouto
+echo "* Setting up myimouto..."
+sudo -i -u myimouto git clone https://github.com/VeryCrushed/myimouto ~myimouto/myimouto
+sudo -i -u myimouto bash -l -c 'mkdir -p ~/bin/myimouto'
+sudo -i -u myimouto echo 'export PATH="$HOME/bin/myimouto:$PATH"' >> ~myimouto/.bash_profile
+sudo -i -u myimouto bash -l -c 'cp ~/myimouto/script/myimouto/* ~/bin/myimouto'
+sudo -i -u myimouto bash -l -c 'chmod 0755 ~/bin/myimouto/*'
+sudo -i -u myimouto bash -l -c 'cd ~/myimouto ; composer install'
+sudo -i -u myimouto bash -l -c 'cd ~/myimouto/config ; cp config.php.example config.php'
+sudo -i -u myimouto bash -l -c "cd ~/myimouto/config ; sed -i -e 's/__hostname__/$HOSTNAME/g' config.php"
+sudo -i -u myimouto bash -l -c 'cd ~/myimouto/config ; cp database.yml.example database.yml'
+sudo -i -u myimouto bash -l -c "cd ~/myimouto/config ; sed -i -e 's/__dbpassword__/$DBPASSWORD/g' database.yml"
+sudo -i -u myimouto bash -l -c "myimouto-deploy $WEBSITEUSERNAME $WEBSITEPASSWORD"
+chown -R myimouto:myimouto /var/lib/php
+
+sudo -i -u myimouto echo "*   Host Name                  : $HOSTNAME" >> ~myimouto/server_details.txt
+sudo -i -u myimouto echo "*   myimouto Account Password  : $MYIMOUTOPASSWORD" >> ~myimouto/server_details.txt
+sudo -i -u myimouto echo "*   MyImouto Site Username     : $WEBSITEUSERNAME" >> ~myimouto/server_details.txt
+sudo -i -u myimouto echo "*   MyImouto Site Password     : $WEBSITEPASSWORD" >> ~myimouto/server_details.txt
+sudo -i -u myimouto echo "*   phpMyAdmin/MySQL Username  : root" >> ~myimouto/server_details.txt
+sudo -i -u myimouto echo "*   phpMyAdmin/MySQL Password  : $DBPASSWORD" >> ~myimouto/server_details.txt
+sudo -i -u myimouto echo "*   eXtplorer Username         : $EXTUSERNAME" >> ~myimouto/server_details.txt
+sudo -i -u myimouto echo "*   eXtplorer Password         : $EXTPASSWORD" >> ~myimouto/server_details.txt
+
+echo ""
+echo ""
+echo ""
+echo "* MyImouto has been deployed onto this server."
+echo "* eXtplorer, phpMyAdmin and vsftpd have also been installed"
+echo "* and are available on the following ports:"
+echo "*"
+echo "*   MyImouto    : 80"
+echo "*   eXtplorer   : 2000"
+echo "*   phpMyAdmin  : 2002"
+echo "*   vsftpd      : 21"
+echo "*"
+echo "* On the server you will want to modify this file:"
+echo "*"
+echo "*   /var/www/myimouto/config/config.php"
+echo "*"
+read -p "Press [enter] to continue..."
+echo "* Server details are as follows:"
+echo "*"
+echo "*   Host Name                  : $HOSTNAME"
+echo "*   myimouto Account Password  : $MYIMOUTOPASSWORD"
+echo "*   MyImouto Site Username     : $WEBSITEUSERNAME"
+echo "*   MyImouto Site Password     : $WEBSITEPASSWORD"
+echo "*   phpMyAdmin/MySQL Username  : root"
+echo "*   phpMyAdmin/MySQL Password  : $DBPASSWORD"
+echo "*   eXtplorer Username         : $EXTUSERNAME"
+echo "*   eXtplorer Password         : $EXTPASSWORD"
+echo "*"
+echo "* A copy is stored in /home/myimouto/server_details.txt"
+echo "* If something breaks post about it on the MyImouto Github. Good luck!"

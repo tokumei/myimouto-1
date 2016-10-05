@@ -4,9 +4,52 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "9d9c450c955b540a9b8c5f635752e4cc",
-    "content-hash": "8fd61aada2394352d297c799d112d66a",
+    "content-hash": "97b8e846893bd764ae6d8428a72ae30c",
     "packages": [
+        {
+            "name": "codescale/ffmpeg-php",
+            "version": "2.7.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/CodeScaleInc/ffmpeg-php.git",
+                "reference": "c4e3e71ac24116e9a8e29b423f0d5e13de980c02"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/CodeScaleInc/ffmpeg-php/zipball/c4e3e71ac24116e9a8e29b423f0d5e13de980c02",
+                "reference": "c4e3e71ac24116e9a8e29b423f0d5e13de980c02",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3"
+            },
+            "type": "library",
+            "autoload": {
+                "classmap": [
+                    "."
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "New BSD"
+            ],
+            "authors": [
+                {
+                    "name": "char0n (Vladimír Gorej, CodeScale s.r.o.)",
+                    "email": "gorej@codescale.net",
+                    "homepage": "http://www.codescale.net/",
+                    "role": "Development lead"
+                }
+            ],
+            "description": "PHP wrapper for FFmpeg application",
+            "homepage": "http://freecode.com/projects/ffmpegphp",
+            "keywords": [
+                "audio",
+                "ffmpeg",
+                "video"
+            ],
+            "time": "2013-05-05 09:10:04"
+        },
         {
             "name": "kriswallsmith/assetic",
             "version": "v1.3.2",
@@ -270,16 +313,16 @@
         },
         {
             "name": "symfony/process",
-            "version": "v3.1.3",
+            "version": "v3.1.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/process.git",
-                "reference": "04c2dfaae4ec56a5c677b0c69fac34637d815758"
+                "reference": "66de154ae86b1a07001da9fbffd620206e4faf94"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/process/zipball/04c2dfaae4ec56a5c677b0c69fac34637d815758",
-                "reference": "04c2dfaae4ec56a5c677b0c69fac34637d815758",
+                "url": "https://api.github.com/repos/symfony/process/zipball/66de154ae86b1a07001da9fbffd620206e4faf94",
+                "reference": "66de154ae86b1a07001da9fbffd620206e4faf94",
                 "shasum": ""
             },
             "require": {
@@ -315,7 +358,7 @@
             ],
             "description": "Symfony Process Component",
             "homepage": "https://symfony.com",
-            "time": "2016-07-28 11:13:48"
+            "time": "2016-09-29 14:13:09"
         },
         {
             "name": "symfony/yaml",

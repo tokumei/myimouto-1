@@ -1,0 +1,10 @@
+#!/bin/bash
+cd /var/www
+git clone https://github.com/VeryCrushed/myimouto
+cd myimouto/config
+cp ~/myimouto/config/config.php /var/www/myimouto/config/config.php
+cp ~/myimouto/config/database.yml /var/www/myimouto/config/database.yml
+cd ..
+composer install
+php install.php $1 $2
+chmod -R 0777 log tmp

@@ -1,0 +1,19 @@
+#!/bin/bash
+cd ~/backup
+echo -n "* Enter the backup to restore: "
+select BACKUPNAME in *;
+do
+    if [[ -z "$BACKUPNAME" ]] ; then
+      echo "* Invalid option!"
+      exit 1
+    fi
+    rm -rf /var/www/myimouto
+    unzip ~/backup/$BACKUPNAME -d /var/www
+    read -r MYSQLPASS < ~/mysql.pass
+    mysql -u root -p$MYSQLPASS < /var/www/db.sql
+    rm /var/www/db.sql
+    cd /var/www/myimouto
+    chmod -R 0777 log tmp
+    cd ~
+    exit 1
+done

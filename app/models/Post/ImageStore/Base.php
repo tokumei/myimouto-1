@@ -43,7 +43,7 @@ abstract class Post_ImageStore_Base
     {
         if (is_file($this->file_path()))
             @unlink($this->file_path());
-        if ($this->_post->image()) {
+        if ($this->_post->image() or $this->_post->video() or $this->_post->flash()) {
             if (file_exists($this->preview_path()))
                 @unlink($this->preview_path());
             if (file_exists($this->sample_path()))
@@ -64,7 +64,7 @@ abstract class Post_ImageStore_Base
         
         // chmod($this->file_path(), 0777);
 
-        if ($this->_post->image()) {
+        if ($this->_post->image() or $this->_post->video() or $this->_post->flash()) {
             $this->_create_dirs($this->preview_path());
             rename($this->_post->tempfile_preview_path(), $this->preview_path());
             // chmod($this->preview_path(), 0777);
